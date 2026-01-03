@@ -57,6 +57,76 @@ window.addEventListener('keydown', (event) => { //Odczytywanie inputu klawiatury
 			if (key === 'ArrowRight') snake.direction = new Vector2d(1, 0);
 		}
 });
+//OBSŁUGA DOTYKU NA TELEFONACH
+let touchStartX = 0;
+let touchStartY = 0;
+
+//Zapisuje gdzie palec dotknął ekranu
+document.addEventListener('touchstart', function(event) {
+    // Jeśli gra się skończyła, tapnięcie restartuje grę (jak "any key")
+    if (isGameOver) {
+        location.reload();
+        return;
+    }
+    
+    // Pobierz pierwsze dotknięcie
+    const touch = event.changedTouches[0];
+    touchStartX = touch.screenX;
+    touchStartY = touch.screenY;
+}, {passive: false});
+
+//Blokuje przesuwanie ekranu podczas grania (żeby strona nie latała góra-dół)
+document.addEventListener('touchmove', function(event) {
+    if (!isGameOver) {
+        event.preventDefault(); 
+    }
+}, {passive: false});
+
+//Sprawdzam gdzie palec został oderwany i obliczam kierunek
+document.addEventListener('touchend', function(event) {
+    if (isGameOver) return;
+
+    const touch = event.changedTouches[0];
+    const touchEndX = touch.screenX;
+    const touchEndY = touch.screenY;
+
+    handleGesture(touchStartX, touchStartY, touchEndX, touchEndY);
+}, {passive: false});
+
+function handleGesture(startX, startY, endX, endY) {
+    const diffX = endX - startX;
+    const diffY = endY - startY;
+
+    // Jeśli ruch był bardzo krótki (przypadkowe tapnięcie), ignorujemy
+    if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10) return;
+
+    // Sprawdzam czy ruch był bardziej w poziomie (X) czy w pionie (Y)
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+        // RUCH POZIOMY
+        // Zabezpieczenie przed zawracaniem (jak w klawiaturze)
+        if (snake.lastDirection.x === 0) { 
+            if (diffX > 0) {
+                // Przesunięcie w prawo
+                snake.direction = new Vector2d(1, 0);
+            } else {
+                // Przesunięcie w lewo
+                snake.direction = new Vector2d(-1, 0);
+            }
+        }
+    } else {
+        // RUCH PIONOWY
+        // Zabezpieczenie przed zawracaniem
+        if (snake.lastDirection.y === 0) {
+            if (diffY > 0) {
+                // Przesunięcie w dół
+                snake.direction = new Vector2d(0, 1);
+            } else {
+                // Przesunięcie w górę
+                snake.direction = new Vector2d(0, -1);
+            }
+        }
+    }
+}
 //Tworzenie węża
 const snake = new Snake();
 //Obiekt jedzonka - z funkcją pomocniczą
@@ -149,4 +219,5 @@ function getSafeFoodPosition(snakeBody) {
 
     return newFoodPosition;
 }
+
 const gameInterval = setInterval(gameLoop , CONFIG.gameSpeed);
